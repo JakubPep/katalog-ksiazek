@@ -36,6 +36,13 @@ function InstallPrompt() {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
+    // Dodatkowe wsparcie dla iOS
+    if ('standalone' in window.navigator) {
+      if (!window.navigator.standalone) {
+        setShowInstallPrompt(true);
+      }
+    }
+
     return () => {
       window.removeEventListener(
         'beforeinstallprompt',
@@ -55,6 +62,11 @@ function InstallPrompt() {
 
       setShowInstallPrompt(false);
       setDeferredPrompt(null);
+    } else if ('standalone' in window.navigator) {
+      // Instrukcje dla iOS
+      alert(
+        'Aby zainstalować aplikację na iOS:\n1. Naciśnij przycisk udostępniania\n2. Wybierz "Dodaj do ekranu głównego"'
+      );
     }
   };
 
