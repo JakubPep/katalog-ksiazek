@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
+import AudioRecorder from '../components/AudioRecorder';
 import bookService from '../services/bookService';
 
 const DetailContainer = styled.div`
@@ -82,6 +83,11 @@ function BookDetailPage() {
     return <LoadingContainer>Nie znaleziono książki</LoadingContainer>;
   }
 
+  const handleRecordingComplete = (recordingData) => {
+    // Tutaj późnej dodamy logikę wysyłania nagrania na serwer
+    console.log('Nagranie zakończone:', recordingData);
+  };
+
   return (
     <DetailContainer>
       <BookCover
@@ -107,6 +113,12 @@ function BookDetailPage() {
           </a>
         )}
       </BookInfo>
+      {book && (
+        <AudioRecorder
+          bookId={book.id}
+          onRecordingComplete={handleRecordingComplete}
+        />
+      )}
     </DetailContainer>
   );
 }
