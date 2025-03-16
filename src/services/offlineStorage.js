@@ -49,25 +49,64 @@ class OfflineStorageService {
   }
 
   // Metody do zarządzania recenzjami
-  static addReview(bookId, review) {
-    const reviews = this.getBookReviews(bookId);
+  static addBookNote(bookId, note) {
+    const notes = this.getBookNotes(bookId);
 
-    // Dodaj unikalny identyfikator recenzji
-    review.id = Date.now();
-    reviews.push(review);
+    // Dodaj unikalny identyfikator notatki
+    note.id = Date.now();
+    note.date = new Date().toLocaleString();
+    notes.push(note);
 
-    localStorage.setItem(`reviews_${bookId}`, JSON.stringify(reviews));
+    localStorage.setItem(`notes_${bookId}`, JSON.stringify(notes));
   }
 
-  static getBookReviews(bookId) {
-    return JSON.parse(localStorage.getItem(`reviews_${bookId}`) || '[]');
+  static getBookNotes(bookId) {
+    return JSON.parse(localStorage.getItem(`notes_${bookId}`) || '[]');
   }
 
-  static deleteReview(bookId, reviewId) {
-    const reviews = this.getBookReviews(bookId);
-    const updatedReviews = reviews.filter((review) => review.id !== reviewId);
+  static deleteBookNote(bookId, noteId) {
+    const notes = this.getBookNotes(bookId);
+    const updatedNotes = notes.filter((note) => note.id !== noteId);
 
-    localStorage.setItem(`reviews_${bookId}`, JSON.stringify(updatedReviews));
+    localStorage.setItem(`notes_${bookId}`, JSON.stringify(updatedNotes));
+  }
+
+  // Metody do zarządzania nagraniami audio
+  static addAudioRecording(bookId, audioBlob) {
+    const recordings = this.getBookAudioRecordings(bookId);
+
+    const audioBase64 =
+      audioBlob instanceof Blob ? URL.createObjectURL(audioBlob) : audioBlob;
+
+    const recording = {
+      id: Date.now(),
+      audioUrl: audioBase64,
+      date: new Date().toLocaleString(),
+    };
+
+    recordings.push(recording);
+    localStorage.setItem(
+      `audioRecordings_${bookId}`,
+      JSON.stringify(recordings)
+    );
+  }
+
+  static getBookAudioRecordings(bookId) {
+    return JSON.parse(
+      localStorage.getItem(`audioRecordings_${bookId}`) || '[]'
+    );
+  }
+
+  static deleteAudioRecording(bookId, recordingId) {
+    const recordings = this.getBookAudioRecordings(bookId);
+    const updatedRecordings = recordings.filter(
+      (rec) => rec.id !== recordingId
+    );
+
+    localStorage.setItem(
+      `audioRecordings_${bookId}`,
+      JSON.stringify(updatedRecordings)
+    );
   }
 }
 

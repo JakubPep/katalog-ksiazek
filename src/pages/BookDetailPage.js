@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from 'react';
+import { FaBookOpen, FaHeart } from 'react-icons/fa';
 import { useParams } from 'react-router-dom';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import AudioRecorder from '../components/AudioRecorder';
-import ReviewForm from '../components/ReviewForm';
-import ReviewList from '../components/ReviewList';
+import BookNoteForm from '../components/BookNoteForm';
+import BookNotesList from '../components/BookNotesList';
 import bookService from '../services/bookService';
 import OfflineStorageService from '../services/offlineStorage';
+
+const PageContainer = styled.div`
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+`;
 
 const LoadingContainer = styled.div`
   display: flex;
@@ -13,89 +18,172 @@ const LoadingContainer = styled.div`
   align-items: center;
   height: 100vh;
   font-size: 1.5rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+`;
+
+const BookDescription = styled.p`
+  line-height: 1.6;
+  color: #333;
+  margin: 1rem 0;
+`;
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
+
+const breatheAnimation = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 `;
 
 const DetailContainer = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  max-width: 1000px;
   margin: 0 auto;
   padding: 2rem;
-  gap: 2rem;
+  min-height: 100vh;
 
-  @media (max-width: 1024px) {
-    grid-template-columns: 1fr;
+  @media (max-width: 768px) {
     padding: 1rem;
   }
 `;
 
-const BookCover = styled.img`
-  width: 100%;
-  max-width: 400px;
-  height: auto;
-  object-fit: cover;
-  justify-self: center;
-
-  @media (max-width: 1024px) {
-    max-width: 300px;
-  }
-`;
-
-const BookInfo = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-
-  @media (max-width: 1024px) {
-    align-items: center;
-    text-align: center;
-  }
-`;
-
-const ReviewSection = styled.div`
-  grid-column: 1 / -1;
+const BookHeader = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  animation: ${fadeIn} 0.6s ease-out;
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
   }
 `;
 
-const ActionContainer = styled.div`
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
+const BookCover = styled.div`
+  position: relative;
+  perspective: 1000px;
 
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    align-items: center;
+  img {
+    width: 100%;
+    max-width: 400px;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    transform: rotateY(-10deg);
+    transition: all 0.4s ease;
+
+    &:hover {
+      transform: rotateY(0) scale(1.05);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
   }
 `;
 
+const BookInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+`;
+
 const BookTitle = styled.h1`
-  font-size: 2rem;
+  font-size: 2.5rem;
+  color: #2c3e50;
   margin-bottom: 1rem;
+  font-weight: 700;
 `;
 
-const BookAuthors = styled.p`
-  font-size: 1.2rem;
-  color: #666;
+const BookMetadata = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+`;
+
+const MetadataItem = styled.div`
+  background: rgba(52, 152, 219, 0.1);
+  padding: 1rem;
+  border-radius: 10px;
+  text-align: center;
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: translateY(-5px);
+  }
+`;
+
+const ActionContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+`;
+
+const ActionButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 30px;
+  background-color: ${(props) => props.color || '#3498db'};
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  animation: ${breatheAnimation} 3s infinite;
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  }
+`;
+
+const NotesSection = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const AudioRecordingsSection = styled.div`
+  margin-top: 2rem;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+`;
+
+const AudioRecordingsList = styled.div`
+  margin-top: 1rem;
+`;
+
+const AudioRecordingItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
   margin-bottom: 1rem;
+  padding: 0.5rem;
+  background: rgba(52, 152, 219, 0.1);
+  border-radius: 10px;
 `;
 
-const BookDescription = styled.p`
-  line-height: 1.6;
-`;
-
-const FavoriteButton = styled.button`
-  background-color: ${(props) => (props.isFavorite ? '#ff6b6b' : '#3498db')};
+const DeleteButton = styled.button`
+  background-color: #e74c3c;
   color: white;
   border: none;
-  padding: 10px 20px;
+  padding: 0.5rem 1rem;
   border-radius: 5px;
-  margin-top: 15px;
   cursor: pointer;
 `;
 
@@ -107,16 +195,22 @@ function BookDetailPage() {
     'https://via.placeholder.com/300x400'
   );
   const [isFavorite, setIsFavorite] = useState(false);
-  const [reviews, setReviews] = useState([]);
+  const [notes, setNotes] = useState([]);
+  const [audioRecordings, setAudioRecordings] = useState([]);
 
-  const loadReviews = () => {
-    const bookReviews = OfflineStorageService.getBookReviews(id);
-    setReviews(bookReviews);
+  const loadNotes = () => {
+    const bookNotes = OfflineStorageService.getBookNotes(id);
+    setNotes(bookNotes);
+  };
+
+  const loadAudioRecordings = () => {
+    const recordings = OfflineStorageService.getBookAudioRecordings(id);
+    setAudioRecordings(recordings);
   };
 
   useEffect(() => {
-    // Dodaj wywołanie loadReviews
-    loadReviews();
+    loadNotes();
+    loadAudioRecordings();
   }, [id]);
 
   useEffect(() => {
@@ -186,57 +280,106 @@ function BookDetailPage() {
   }
 
   const handleRecordingComplete = (recordingData) => {
-    console.log('Nagranie zakończone:', recordingData);
+    OfflineStorageService.addAudioRecording(id, recordingData.audioBlob);
+    loadAudioRecordings();
+  };
+
+  const deleteAudioRecording = (recordingId) => {
+    OfflineStorageService.deleteAudioRecording(id, recordingId);
+    loadAudioRecordings();
   };
 
   return (
-    <DetailContainer>
-      <BookCover
-        src={coverImage}
-        alt={book.title}
-        onError={handleCoverImageError}
-      />
-      <BookInfo>
-        <BookTitle>{book.title}</BookTitle>
-        <BookAuthors>Autor: {book.authors.join(', ')}</BookAuthors>
-        <p>Wydawca: {book.publisher || 'Nieznany'}</p>
-        <p>Data publikacji: {book.publishedDate || 'Brak daty'}</p>
-        <p>Liczba stron: {book.pageCount || 'Nieznana'}</p>
-        {book.averageRating && (
-          <p>
-            Ocena: {book.averageRating} / 5 ({book.ratingsCount} ocen)
-          </p>
-        )}
-        <BookDescription>{book.description}</BookDescription>
-        {book.previewLink && (
-          <a href={book.previewLink} target="_blank" rel="noopener noreferrer">
-            Podgląd książki
-          </a>
-        )}
-
-        <ActionContainer>
-          <FavoriteButton isFavorite={isFavorite} onClick={toggleFavorite}>
-            {isFavorite ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}
-          </FavoriteButton>
-
-          {book && (
-            <AudioRecorder
-              bookId={book.id}
-              onRecordingComplete={handleRecordingComplete}
+    <PageContainer>
+      <DetailContainer>
+        <BookHeader>
+          <BookCover>
+            <img
+              src={coverImage}
+              alt={book.title}
+              onError={handleCoverImageError}
             />
-          )}
-        </ActionContainer>
-      </BookInfo>
+          </BookCover>
 
-      <ReviewSection>
-        <ReviewForm bookId={book.id} onReviewAdded={loadReviews} />
-        <ReviewList
-          bookId={book.id}
-          reviews={reviews}
-          onReviewDeleted={loadReviews}
-        />
-      </ReviewSection>
-    </DetailContainer>
+          <BookInfo>
+            <BookTitle>{book.title}</BookTitle>
+            <BookMetadata>
+              <MetadataItem>
+                <strong>Autor</strong>
+                <p>{book.authors.join(', ')}</p>
+              </MetadataItem>
+              <MetadataItem>
+                <strong>Wydawca</strong>
+                <p>{book.publisher || 'Nieznany'}</p>
+              </MetadataItem>
+              <MetadataItem>
+                <strong>Data publikacji</strong>
+                <p>{book.publishedDate || 'Brak daty'}</p>
+              </MetadataItem>
+              <MetadataItem>
+                <strong>Strony</strong>
+                <p>{book.pageCount || 'Nieznana'}</p>
+              </MetadataItem>
+            </BookMetadata>
+
+            <BookDescription>{book.description}</BookDescription>
+
+            <ActionContainer>
+              <ActionButton
+                color={isFavorite ? '#e74c3c' : '#3498db'}
+                onClick={toggleFavorite}
+              >
+                <FaHeart />{' '}
+                {isFavorite ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}
+              </ActionButton>
+
+              {book.previewLink && (
+                <ActionButton
+                  color="#2ecc71"
+                  as="a"
+                  href={book.previewLink}
+                  target="_blank"
+                >
+                  <FaBookOpen /> Podgląd książki
+                </ActionButton>
+              )}
+            </ActionContainer>
+          </BookInfo>
+        </BookHeader>
+
+        <NotesSection>
+          <BookNoteForm bookId={book.id} onNoteAdded={loadNotes} />
+          <BookNotesList
+            bookId={book.id}
+            notes={notes}
+            onNoteDeleted={loadNotes}
+          />
+        </NotesSection>
+
+        <AudioRecordingsSection>
+          <h2>Moje nagrania</h2>
+          <AudioRecorder
+            bookId={book.id}
+            onRecordingComplete={handleRecordingComplete}
+          />
+          {audioRecordings.length > 0 && (
+            <AudioRecordingsList>
+              {audioRecordings.map((recording) => (
+                <AudioRecordingItem key={recording.id}>
+                  <audio src={recording.audioUrl} controls />
+                  <span>{recording.date}</span>
+                  <DeleteButton
+                    onClick={() => deleteAudioRecording(recording.id)}
+                  >
+                    Usuń
+                  </DeleteButton>
+                </AudioRecordingItem>
+              ))}
+            </AudioRecordingsList>
+          )}
+        </AudioRecordingsSection>
+      </DetailContainer>
+    </PageContainer>
   );
 }
 

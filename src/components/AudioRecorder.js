@@ -1,10 +1,12 @@
 import React, { useRef, useState } from 'react';
 import styled from 'styled-components';
+import OfflineStorageService from '../services/offlineStorage';
 
 const RecorderContainer = styled.div`
   display: flex;
-  align-items: center;
-  margin: 1rem 0;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
 `;
 
 const AudioButton = styled.button`
@@ -12,31 +14,50 @@ const AudioButton = styled.button`
   color: white;
   border: none;
   padding: 10px 20px;
-  margin-right: 10px;
   border-radius: 5px;
   cursor: pointer;
-
-  &:disabled {
-    background-color: #bdc3c7;
-    cursor: not-allowed;
-  }
 `;
 
-const AudioControls = styled.div`
+const AudioList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const AudioItem = styled.div`
   display: flex;
   align-items: center;
+  gap: 10px;
+  border: 1px solid #ddd;
+  padding: 10px;
+  border-radius: 5px;
+`;
+
+const DeleteButton = styled.button`
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 3px;
 `;
 
 function AudioRecorder({ bookId, onRecordingComplete }) {
   const [isRecording, setIsRecording] = useState(false);
-  const [audioURL, setAudioURL] = useState(null);
+  const [audioRecordings, setAudioRecordings] = useState([]);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+
+  const loadRecordings = () => {
+    const recordings = OfflineStorageService.getBookAudioRecordings(bookId);
+    setAudioRecordings(recordings);
+  };
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
+
+      audioChunksRef.current = [];
 
       mediaRecorderRef.current.ondataavailable = (event) => {
         audioChunksRef.current.push(event.data);
@@ -46,14 +67,14 @@ function AudioRecorder({ bookId, onRecordingComplete }) {
         const audioBlob = new Blob(audioChunksRef.current, {
           type: 'audio/wav',
         });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        setAudioURL(audioUrl);
 
-        // Opcjonalnie: wysłanie nagrania na serwer
+        OfflineStorageService.addAudioRecording(bookId, audioBlob);
+        loadRecordings();
+
         onRecordingComplete({
           bookId,
           audioBlob,
-          audioUrl,
+          audioUrl: URL.createObjectURL(audioBlob),
         });
 
         audioChunksRef.current = [];
@@ -73,32 +94,39 @@ function AudioRecorder({ bookId, onRecordingComplete }) {
     }
   };
 
-  const clearRecording = () => {
-    if (audioURL) {
-      URL.revokeObjectURL(audioURL);
-      setAudioURL(null);
-    }
+  const deleteRecording = (recordingId) => {
+    OfflineStorageService.deleteAudioRecording(bookId, recordingId);
+    loadRecordings();
   };
 
-  return (
-    <div>
-      <RecorderContainer>
-        {!isRecording ? (
-          <AudioButton onClick={startRecording}>Nagraj recenzję</AudioButton>
-        ) : (
-          <AudioButton recording={true} onClick={stopRecording}>
-            Zatrzymaj nagrywanie
-          </AudioButton>
-        )}
+  React.useEffect(() => {
+    loadRecordings();
+  }, [bookId]);
 
-        {audioURL && (
-          <AudioControls>
-            <audio src={audioURL} controls />
-            <AudioButton onClick={clearRecording}>Usuń</AudioButton>
-          </AudioControls>
-        )}
-      </RecorderContainer>
-    </div>
+  return (
+    <RecorderContainer>
+      {!isRecording ? (
+        <AudioButton onClick={startRecording}>Nagraj audio</AudioButton>
+      ) : (
+        <AudioButton recording={true} onClick={stopRecording}>
+          Zatrzymaj nagrywanie
+        </AudioButton>
+      )}
+
+      {audioRecordings.length > 0 && (
+        <AudioList>
+          {audioRecordings.map((recording) => (
+            <AudioItem key={recording.id}>
+              <audio src={recording.audioUrl} controls />
+              <span>{recording.date}</span>
+              <DeleteButton onClick={() => deleteRecording(recording.id)}>
+                Usuń
+              </DeleteButton>
+            </AudioItem>
+          ))}
+        </AudioList>
+      )}
+    </RecorderContainer>
   );
 }
 
