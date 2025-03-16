@@ -49,14 +49,29 @@ class BookService {
 
   async getBookDetails(bookId) {
     try {
+      console.log('Pobieranie szczegółów książki o ID:', bookId);
       const response = await axios.get(
         `${GOOGLE_BOOKS_API_BASE_URL}/${bookId}`
       );
+
+      console.log('Odpowiedź API:', response.data);
+
+      if (!response.data) {
+        console.error('Brak danych dla książki');
+        return null;
+      }
+
       const item = response.data;
+
+      // Dodatkowa walidacja danych
+      if (!item.volumeInfo) {
+        console.error('Brak informacji o woluminie');
+        return null;
+      }
 
       return {
         id: item.id,
-        title: item.volumeInfo.title,
+        title: item.volumeInfo.title || 'Tytuł nieznany',
         authors: item.volumeInfo.authors || ['Nieznany autor'],
         description: this.cleanBookDescription(item.volumeInfo.description),
         coverImage: this.getBestCoverImage(item.volumeInfo.imageLinks),
@@ -69,7 +84,21 @@ class BookService {
         previewLink: item.volumeInfo.previewLink,
       };
     } catch (error) {
-      console.error('Błąd podczas pobierania szczegółów książki:', error);
+      console.error('Szczegółowy błąd podczas pobierania książki:', error);
+
+      // Dokładniejsze logowanie błędu
+      if (error.response) {
+        // Błąd odpowiedzi serwera
+        console.error('Dane błędu:', error.response.data);
+        console.error('Status błędu:', error.response.status);
+      } else if (error.request) {
+        // Błąd żądania
+        console.error('Błąd żądania:', error.request);
+      } else {
+        // Inny błąd
+        console.error('Błąd:', error.message);
+      }
+
       return null;
     }
   }
